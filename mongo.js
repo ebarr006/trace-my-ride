@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.post('save', function() {
-  console.log('Save Sucess');
+  console.log('User Save Sucess');
 })
 
 UserSchema.query.byTrackingId = function(id) {
@@ -20,6 +20,10 @@ const CoordinateSchema = new mongoose.Schema({
   lat: String,
   lng: String
 });
+
+CoordinateSchema.post('save', function() {
+  console.log('Coordinate Save Sucess');
+})
 
 User = mongoose.model('User', UserSchema);
 Coordinate = mongoose.model('Coordinate', CoordinateSchema);
