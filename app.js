@@ -1,83 +1,88 @@
-const express = require('express')
-const app = express()
-const { User, Coordinate } = require('./mongo')
-port = 8000
+require('dotenv').config();
+require('./config/database').connect();
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const auth = require('./middleware/auth');
+const User = require('./model/user');
+const port = process.env.PORT || 3000
+
+const app = express();
 
 app.use(express.json());
 
-app.get('/users', async (req, res) => {
-  const users = await User.find({})
-    .then(result => result)
-    .catch(err => err);
-  console.log(users);
-  res.send(users);
-})
-
-app.delete('/users', async (req, res) => {
-  const { id } = req.query;
-  const users = await User.deleteMany({ trackingId: id })
-    .then(result => result)
-    .catch(err => err);
-  res.send(users);
-})
-
-app.get('/wipe-users', async (req, res) => {
-  const result = await User.deleteMany({});
-  res.send(result);
-})
-
-app.post('/users', async (req, res) => {
-  const { name, trackingId } = req.body;
-  const user = new User({
-    name,
-    trackingId
-  });
-  const result = await user.save().catch(err => {
-    console.log(`Failed to save: ${err}`);
-    return err;
-  });
-  res.send(result);
+app.get('/welcome', auth, (req, res) => {
+  res.status(200).send('Welcome 🙌 ');
 });
 
-app.get('/coordinates', async (req, res) => {
-  const coordinates = await Coordinate.find({})
-    .then(result => result)
-    .catch(err => err);
-  console.log(coordinates);
-  res.send(coordinates);
+app.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body
+
+    if ((!email && password && username)) {
+      res.status(400).send('All input is required');
+    }
+
+    const exists = await User.findOne({ email });
+
+    if (exists) {
+      return res.status(409).send('User already exists!. Please login');
+    }
+
+    let encryptedPass = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password: encryptedPass,
+    });
+
+    const token = jwt.sign(
+      { user_id: user._id, email },
+      process.env.TOKEN_KEY,
+      { expiresIn: '2h' }
+    );
+
+    user.token = token;
+
+    res.status(201).json(user);
+
+  } catch (e) {
+    console.log(e);
+  }
 })
 
-app.post('/coordinates', async (req, res) => {
-  const { trackingId, lat, lng } = req.body;
-  const coordinate = new Coordinate({
-    trackingId,
-    lat,
-    lng
-  });
-  const result = await coordinate.save().catch(err => {
-    console.log(`Failed to save: ${err}`);
-    return err;
-  });
-  res.send(result);
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!(email && password)) {
+      res.status(400).send('All input is required.');
+    }
+
+    const user = await User.findOne({ email });
+
+    console.log(user.password);
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const token = jwt.sign(
+        { user_id: user._id, email },
+        process.env.TOKEN_KEY,
+        { expiresIn: '2h' },
+      );
+
+      user.token = token;
+
+      res.status(200).json(user)
+    }
+    res.status(400).send('Invalid Credentials');
+  } catch (e) {
+    console.log(e);
+  }
 });
-
-app.delete('/coordinates', async (req, res) => {
-  const { id } = req.query;
-  const coordinates = await Coordinate.deleteMany({ trackingId: id })
-    .then(result => result)
-    .catch(err => err);
-  res.send(coordinates);
-})
-
-app.get('/wipe-coordinates', async (req, res) => {
-  const result = await Coordinate.deleteMany({});
-  res.send(result);
-})
-
-app.post('/', function (req, res) {
-  res.send('Got a POST request')
-})
 
 app.listen(port, () => {
-  console.log('Example app listening at http://localhost:8000')
+  console.log(`Trace-My-Data is running.`)
 })
+
+module.exports = app;
