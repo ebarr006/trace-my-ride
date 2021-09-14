@@ -14,21 +14,23 @@ app.use(express.json());
 
 app.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body
-    if ((!email && password && username)) {
+    const { username, email, password, trackingId } = req.body
+    if ((!email && password && username && trackingId)) {
       res.status(400).send('All input is required');
     }
 
-    const exists = UserService.getUser({ email });
+    const exists = await UserService.getUser({ email });
     if (exists) {
+      console.log(`Found: ${exists}`);
       return res.status(409).send('User already exists! Please login');
     }
 
     let encryptedPass = await bcrypt.hash(password, 10);
-    const user = UserService.createUser({
+    const user = await UserService.createUser({
       username,
       email: email.toLowerCase(),
       password: encryptedPass,
+      trackingId
     });
 
     const token = jwt.sign(
