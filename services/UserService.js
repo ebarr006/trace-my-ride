@@ -1,34 +1,37 @@
-const User = require('../model/user');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 class UserService {
-  static getAllUsers = async (params = {}) => {
-    let users = null;
+  static getUsers = (params = {}) => {
     try {
-      users = await User.find(params);
+      return prisma.user.findMany({
+        include: { trips: true }
+      });
     } catch (error) {
-      console.log(error);
+      throw new Error(`[UserService.getUsers]\n${error}`);
     }
-    return users;
   }
 
   static getUser = async (params = {}) => {
-    let user = null;
     try {
-      user = await User.findOne(params);
+      return await prisma.user.findUnique({
+        where: { ...params },
+        include: { trips: true }
+      });
     } catch (error) {
-      console.log(error);
+      throw new Error(`[UserService.getUsers]\n${error}`);
     }
-    return user;
   }
 
-  static createUser = async (params) => {
-    let user = null;
+  static createUser = (params) => {
     try {
-      user = await User.create(params)
+      return prisma.user.create({
+        data: { ...params },
+        include: { trips: true }
+      });
     } catch (error) {
-      console.log(error);
+      console.log(`[UserService.createUser]\n${error}`);
     }
-    return user;
   }
 };
 

@@ -1,11 +1,11 @@
 require('dotenv').config();
-require('./config/database').connect();
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const auth = require('./middleware/auth');
 const UserService = require('./services/UserService');
 const users = require('./routes/users');
+const trips = require('./routes/trips');
 const port = process.env.PORT || 3000
 
 const app = express();
@@ -21,7 +21,7 @@ app.post('/register', async (req, res) => {
 
     const exists = await UserService.getUser({ email });
     if (exists) {
-      console.log(`Found: ${exists}`);
+      console.log('User already exists! Please login');
       return res.status(409).send('User already exists! Please login');
     }
 
@@ -33,7 +33,7 @@ app.post('/register', async (req, res) => {
     });
 
     const token = jwt.sign(
-      { user_id: user._id, email },
+      { user_id: user.id, email },
       process.env.TOKEN_KEY,
       { expiresIn: '2h' }
     );
@@ -44,6 +44,7 @@ app.post('/register', async (req, res) => {
 
   } catch (e) {
     console.log(e);
+    res.sendStatus(400)
   }
 })
 
@@ -60,20 +61,25 @@ app.post('/login', async (req, res) => {
     });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      console.log('here');
+
       const token = jwt.sign(
-        { user_id: user._id, email },
+        { user_id: user.id, email },
         process.env.TOKEN_KEY,
         { expiresIn: '2h' },
       );
 
       user.token = token;
-      
+
+      console.log(`LOGGED IN AS: ${user}`)
       res.status(200).json(user)
     }
-    res.status(400).send('Invalid Credentials');
+
+    console.log('Invalid Credentials');
+    res.sendStatus(400);
+
   } catch (e) {
     console.log(e);
+    res.sendStatus(400);
   }
 });
 
@@ -82,6 +88,7 @@ app.get('/ping', auth, (req, res) => {
 });
 
 app.use('/api', auth, users);
+app.use('/api', auth, trips);
 
 app.listen(port, () => {
   console.log(`Trace-My-Data is running.`)
