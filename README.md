@@ -11,8 +11,10 @@ There's two parts to the project, this web app and an iOS app. The rider uses th
 - [ ] CRUD Ops
   - [x] Login
   - [x] Register
-  - [ ] Read/Write User
-  - [ ] Read Users
+  - [x] Read/Write User
+  - [x] Read Users include trips
+  - [x] Read/Write Trips
+  - [x] Read Trips include users
   - [ ] Read/Write Coordinates
   - [ ] Read Coordinates (return coordinate count for specific trip)
   - [ ] _more to be added
