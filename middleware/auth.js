@@ -1,9 +1,8 @@
 const jwt = require("jsonwebtoken");
 const UserService = require("../services/UserService");
-
 const config = process.env;
 
-const verifyToken = async (req, res, next) => {
+const auth = async (req, res, next) => {
   const token =
     req.body.token || req.query.token || req.headers["x-access-token"];
 
@@ -13,11 +12,12 @@ const verifyToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, config.TOKEN_KEY);
 
-    const thisUser = await UserService.getUser({
-      email: decoded.email
-    });
+    const { id } = await UserService.getUser(
+      { email: decoded.email },
+      { trips: true }
+    );
 
-    req.user = thisUser;
+    req.user = id
     
   } catch (err) {
     return res.status(401).send("Invalid Token");
@@ -25,4 +25,6 @@ const verifyToken = async (req, res, next) => {
   return next();
 };
 
-module.exports = verifyToken;
+module.exports = {
+  auth
+};

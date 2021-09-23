@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const auth = require('./middleware/auth');
+const { auth } = require('./middleware/auth');
 const UserService = require('./services/UserService');
 const users = require('./routes/users');
 const trips = require('./routes/trips');
@@ -19,18 +19,24 @@ app.post('/register', async (req, res) => {
       res.status(400).send('All input is required');
     }
 
-    const exists = await UserService.getUser({ email });
+    const exists = await UserService.getUser(
+      { email },
+      { trips: true }
+    );
     if (exists) {
       console.log('User already exists! Please login');
       return res.status(409).send('User already exists! Please login');
     }
 
     let encryptedPass = await bcrypt.hash(password, 10);
-    const user = await UserService.createUser({
-      username: username.toLowerCase(),
-      email: email.toLowerCase(),
-      password: encryptedPass,
-    });
+    const user = await UserService.createUser(
+      {
+        username: username.toLowerCase(),
+        email: email.toLowerCase(),
+        password: encryptedPass,
+      },
+      { trips: true }
+    );
 
     const token = jwt.sign(
       { user_id: user.id, email },
@@ -56,12 +62,12 @@ app.post('/login', async (req, res) => {
       res.status(400).send('All input is required.');
     }
 
-    const user = await UserService.getUser({
-      email: email.toLowerCase()
-    });
+    const user = await UserService.getUser(
+      { email },
+      { trips: true }
+    );
 
     if (user && (await bcrypt.compare(password, user.password))) {
-
       const token = jwt.sign(
         { user_id: user.id, email },
         process.env.TOKEN_KEY,
@@ -70,13 +76,11 @@ app.post('/login', async (req, res) => {
 
       user.token = token;
 
-      console.log(`LOGGED IN AS: ${user}`)
-      res.status(200).json(user)
+      // console.log('Logged in as: ', user);
+      res.status(200).send(user)
+    } else {
+      throw Error('Invalid Credentials')
     }
-
-    console.log('Invalid Credentials');
-    res.sendStatus(400);
-
   } catch (e) {
     console.log(e);
     res.sendStatus(400);
@@ -87,8 +91,8 @@ app.get('/ping', auth, (req, res) => {
   res.status(200).send('pong 🙌 ');
 });
 
-app.use('/api', auth, users);
-app.use('/api', auth, trips);
+app.use('/api/users', auth, users);
+app.use('/api/trips', auth, trips);
 
 app.listen(port, () => {
   console.log(`Trace-My-Data is running.`)

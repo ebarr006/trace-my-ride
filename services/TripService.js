@@ -2,36 +2,35 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 class TripService {
-  static getTrips = (params = {}) => {
+  static getTrips = (where = {}, include = {}) => {
     try {
-      return prisma.trip.findMany({
-        where: { ...params },
-        include: { user: true }
-      })
+      return prisma.trip.findMany({ where, include })
     } catch (error) {
       throw new Error(`[TripService.getTrips]\n${error}`);
     }
   }
 
-  static getTrip = (params = {}) => {
+  static getTrip = (where = {}, include = {}) => {
     try {
-      return prisma.trip.findUnique({
-        where: { ...params },
-        include: { user: true }
-      });
+      return prisma.trip.findUnique({ where, include });
     } catch (error) {
       throw new Error(`[TripService.getTrip]\n${error}`);
     }
   }
 
-  static createTrip = (params) => {
+  static createTrip = (data = {}, include = {}) => {
     try {
-      return prisma.trip.create({
-        data: { ...params },
-        include: { user: true }
-      });
+      return prisma.trip.create({ data, include });
     } catch (error) {
       console.log(`[TripService.createTrip]\n${error}`);
+    }
+  }
+
+  static createPin = (data = {}, include = {}) => {
+    try {
+      return prisma.pin.create({ data, include });
+    } catch (error) {
+      console.log(`[TripService.createPin]\n${error}`);
     }
   }
 };
